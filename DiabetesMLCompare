@@ -1,1 +1,161 @@
+# importing the dependencies
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import random
+from google.colab import files
+uploaded = files.upload()
 
+class LassoRegression() :
+
+    def __init__( self, learning_rate, iterations, lmbd):
+        self.learning_rate = learning_rate
+
+        self.iterations = iterations
+
+        self.lmbd = lmbd
+
+    # Function for model training
+
+    def fit( self, X, Y ) :
+
+        # no_of_training_examples, no_of_features
+
+        self.m, self.n = X.shape
+        # weight initialization
+
+        self.W = np.zeros( self.n )
+
+        self.b = 0
+
+        self.X = X
+
+        self.Y = Y
+        # gradient descent learning
+
+        for i in range( self.iterations ) :
+
+            self.update_weights()
+
+        return self
+
+    # Helper function to update weights in gradient descent
+        # print(self.X.shape)
+    def update_weights( self ) :
+
+        Y_pred = self.predict( self.X )
+
+        # calculate gradients
+
+        dW = np.zeros( self.n )
+        for j in range( self.n ) :
+
+            if self.W[j] > 0 :
+
+                dW[j] = ( - ( 2 * ( self.X[:, j] ).dot( self.Y - Y_pred ) )
+
+                         + self.lmbd ) / self.m
+
+            else :
+
+                dW[j] = ( - ( 2 * ( self.X[:, j] ).dot( self.Y - Y_pred ) )
+
+                         - self.lmbd ) / self.m
+
+
+        db = - 2 * np.sum( self.Y - Y_pred ) / self.m
+
+        # update weights
+
+        self.W = self.W - self.learning_rate * dW
+
+        self.b = self.b - self.learning_rate * db
+
+        return self
+
+    # Hypothetical function  h( x )
+
+    def predict( self, X ) :
+        return X.dot( self.W ) + self.b
+def acc(original,predicted):
+  correct = 0
+  total = len(original)
+
+  for i in range(total):
+    if original[i] == predicted[i]:
+      correct += 1
+
+  accuracy = correct/total
+  return accuracy
+def main() :
+
+    # Importing dataset
+    # loading the data from csv file to a pandas dataframe
+    real_data = pd.read_csv('/content/diabetes.csv', index_col=0)
+    X = real_data.drop(['Outcome'],axis = 1)
+    Y = real_data['Outcome']
+    Y = Y.values #converting into np array from data frame
+    Y = Y.reshape((-1, 1))
+    X = (X-np.mean(X,axis = 0))/np.std(X,axis = 0)
+    X.insert(0,'new',1) #Inserting at the index 0, with a value 1
+    X = X.values #converting into np array from data frame
+
+    df = pd.read_csv( "/content/diabetes.csv" )
+
+    X = df.iloc[:, :-1].values
+
+    Y = df.iloc[:,-1].values
+    # print(X)
+
+    # Splitting dataset into train and test set
+    def split_data(X,Y,test_size = 0.2,random_state = 0):
+      np.random.seed(random_state)
+      test_size = int(test_size * len(X))
+      indices = np.arange(X.shape[0])
+      random.shuffle(indices)
+
+      train_indices = indices[test_size:]
+      test_indices = indices[:test_size]
+      X_train = [X[i] for i in train_indices]
+      Y_train = [Y[i] for i in train_indices]
+      X_test = [X[i] for i in test_indices]
+      Y_test = [Y[i] for i in test_indices]
+      print(np.asarray(X_train).shape)
+      print(np.asarray(Y_train).shape)
+      return np.asarray(X_train), np.asarray(X_test), np.asarray(Y_train), np.asarray(Y_test)
+
+    X_train, X_test, Y_train, Y_test = split_data( X, Y, test_size = 0.2, random_state = 0 )
+
+    # Model training
+    for k in range(0,10,1):
+
+      model = LassoRegression( iterations = 1000, learning_rate = 2**-20, lmbd = k/10)
+
+      model.fit( X_train, Y_train )
+
+    # Prediction on test set
+      threshold=0.4
+      Lasso_Prediction=[]
+      Y_pred = model.predict( X_test )
+      for i in range (len(Y_pred)):
+        if(Y_pred[i]<threshold):
+          Lasso_Prediction.append(0)
+        else:
+          Lasso_Prediction.append(1)
+    # print(Lasso_Prediction)
+    # print(Y_pred.shape)
+    # print(Y_test)
+      print( "accuracy = " , acc(Y_test,Lasso_Prediction))
+      print( "Predicted values ", ( Y_pred[:3] ) )
+
+      print( "Real values      ", Y_test[:3] )
+
+      print( "Trained W        ", ( model.W) )
+
+      print( "Trained b        ", ( model.b ) )
+
+
+
+if __name__ == "__main__" :
+
+    main()
